@@ -8,13 +8,31 @@ function Assert-Admin {
 
 Assert-Admin
 
-$isoPath = "C:\Iso\fedora.iso"
+$isoDir = "C:\Iso"
+$isoName = "Fedora-KDE-Live-x86_64-42-1.6.iso"
+$isoUrl = "https://download.fedoraproject.org/pub/fedora/linux/releases/42/Spins/x86_64/iso/$isoName"
+$isoPath = Join-Path $isoDir $isoName
 
-if (-Not (Test-Path $isoPath)) {
-    Write-Warning "ISO not found at $isoPath. Please place your Fedora ISO there and rerun."
-    exit 1
+# Create ISO directory if it doesn't exist
+if (-Not (Test-Path $isoDir)) {
+    Write-Output "[*] Creating directory $isoDir..."
+    New-Item -Path $isoDir -ItemType Directory | Out-Null
 } else {
-    Write-Output "[*] Found Fedora ISO at $isoPath"
+    Write-Output "[*] Directory $isoDir exists."
+}
+
+# Download Fedora KDE Spin 42 ISO if not present
+if (-Not (Test-Path $isoPath)) {
+    Write-Output "[*] Downloading Fedora KDE Spin 42 ISO to $isoPath ..."
+    try {
+        Invoke-WebRequest -Uri $isoUrl -OutFile $isoPath -ErrorAction Stop
+        Write-Output "[*] Download complete."
+    } catch {
+        Write-Warning "Failed to download Fedora ISO. Check your internet connection."
+        exit 1
+    }
+} else {
+    Write-Output "[*] Fedora KDE Spin ISO already exists at $isoPath"
 }
 
 # Check if Grub2Win is installed
@@ -43,8 +61,8 @@ try {
     exit 1
 }
 
-# Create Grub2Win boot entry instructions file
-$entryGuidePath = "$env:USERPROFILE\Desktop\grub2win_fedora_entry.txt"
+# Create Grub2Win boot entry instructions file on Desktop
+$entryGuidePath = Join-Path $env:USERPROFILE "Desktop\grub2win_fedora_entry.txt"
 @"
 --------------------------------------------
 [ Add This Entry In Grub2Win Boot Menu ]
@@ -53,7 +71,7 @@ $entryGuidePath = "$env:USERPROFILE\Desktop\grub2win_fedora_entry.txt"
 Menu Name: Fedora KDE Live
 Type:      ISO
 ISO Path:  $isoPath
-Kernel Params: inst.stage2=hd:LABEL=Fedora-KDE-Live-x86_64-40
+Kernel Params: inst.stage2=hd:LABEL=Fedora-KDE-Live-x86_64-42
 
 Optional: inst.ks=http://yourserver/yourkickstart.ks
 
